@@ -1,12 +1,4 @@
-#! /usr/bin/env python3
-import ctypes
-import enum
-import sys
-
-
-# Reference:
-# msdn.microsoft.com/en-us/library/windows/desktop/bb762153(v=vs.85).aspx
-
+import ctypes, enum, sys
 
 class SW(enum.IntEnum):
 
@@ -53,9 +45,8 @@ def bootstrap():
 
 
 def main():
-    # Your Code Here
-    print(input('Echo: '))
-
+    # Code Here
+    print
 
 if __name__ == '__main__':
     bootstrap()
