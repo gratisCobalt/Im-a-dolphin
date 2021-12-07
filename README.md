@@ -11,9 +11,10 @@ A summary of standalone modules useful for malwares
 * disableUAC: disables User Account Control via command (working)
 * runAsAdmin: trys to execute code as admin, show an admin promt (working)
 
-## backdoor
+## external modules
 
-* client: client from [xp4xbox](https://github.com/xp4xbox/Python-Backdoor) (working)
+* Python-Backdoor: client from [xp4xbox](https://github.com/xp4xbox/Python-Backdoor)
+* Desktop Goose: [Desktop Goose](https://samperson.itch.io/desktop-goose)
 
 ## deviceInfo
 
