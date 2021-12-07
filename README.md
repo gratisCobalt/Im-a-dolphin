@@ -11,11 +11,6 @@ A summary of standalone modules useful for malwares
 * disableUAC: disables User Account Control via command (working)
 * runAsAdmin: trys to execute code as admin, show an admin promt (working)
 
-## external modules
-
-* Python-Backdoor: client from [xp4xbox](https://github.com/xp4xbox/Python-Backdoor)
-* Desktop Goose: [Desktop Goose](https://samperson.itch.io/desktop-goose)
-
 ## deviceInfo
 
 * byteConverter: allows better readability of byte specifications (1253656 => '1.20MB') (working)
@@ -31,3 +26,8 @@ A summary of standalone modules useful for malwares
 
 * cmdscheduler: creates new scheduled task via cmd based on xml file (untested)
 * taskscheduler: creates new scheduled task via win32 (python) (uncomplete, working)
+
+## external modules
+
+* Python-Backdoor: client from [xp4xbox](https://github.com/xp4xbox/Python-Backdoor)
+* Desktop Goose: [Desktop Goose](https://samperson.itch.io/desktop-goose)
