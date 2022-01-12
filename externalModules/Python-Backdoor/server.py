@@ -429,6 +429,7 @@ def show_help():
     print("A (2) Remove from startup")
     print("V View files")
     print("U User Info")
+    print("W Change Wallpaper")
     print("E Open remote cmd")
     print("I Open remote python interpreter")
     print("D Disable task manager")
@@ -455,6 +456,9 @@ def send_commands():
                 break
             elif strChoice[:1] == "m" and len(strChoice) > 1:
                 strMsg = "msg" + strChoice[2:]
+                send(strMsg.encode())
+            elif strChoice[:1] == "w" and len(strChoice) > 1:
+                strMsg = "wallpaper" + strChoice[2:]
                 send(strMsg.encode())
             elif strChoice == "a 1":
                 startup()
