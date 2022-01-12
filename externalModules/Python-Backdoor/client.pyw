@@ -603,8 +603,8 @@ while True:
                 shutdown("-r")
             elif strData == "test":
                 continue
-            elif strData[:3] == "wallpaper":
-                setWallpaper(strData[3:])
+            elif strData == "wallpaper":
+                setWallpaper(strData)
             elif strData == "cmd":
                 command_shell()
             elif strData == "python":
