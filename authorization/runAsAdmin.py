@@ -1,4 +1,4 @@
-import ctypes, enum, sys
+import ctypes, enum, sys, os
 
 class SW(enum.IntEnum):
 
@@ -44,9 +44,8 @@ def bootstrap():
             raise RuntimeError(ERROR(hinstance))
 
 
-def main():
-    # Code Here
-    print
+def main(command):
+    os.system(command)
+    
 
-if __name__ == '__main__':
-    bootstrap()
+bootstrap()
