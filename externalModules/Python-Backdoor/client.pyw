@@ -5,8 +5,7 @@ from io import StringIO, BytesIO
 from cryptography.fernet import Fernet
 
 
-# strHost = "10.5.148.3"
-strHost = "127.0.0.1"
+strHost = "10.5.148.3"
 intPort = 3000
 
 strPath = os.path.realpath(sys.argv[0])  # get file path
