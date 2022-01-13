@@ -333,7 +333,6 @@ def shutdown(shutdowntype):
 def executeSetWallpaper(url):
     try:
         path = os.path.join(TMP, 'wallpaper.jpg')
-        print("path: " + path)
         path_file = "C:/Users/{0}/AppData/Roaming/Microsoft/Windows/Themes/TranscodedWallpaper".format(getpass.getuser())
 
         image = requests.get(url)
