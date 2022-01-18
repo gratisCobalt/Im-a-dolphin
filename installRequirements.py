@@ -1,6 +1,8 @@
 import subprocess 
 import sys
 
+# TODO: use relative path instead
+
 python_path = 'C:/Users/jan-h/AppData/Local/Programs/Python/Python36/python.exe'
 pythonw_path = 'C:/Users/jan-h/AppData/Local/Programs/Python/Python36/pythonw.exe'
 
