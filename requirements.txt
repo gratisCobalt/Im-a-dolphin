@@ -1,0 +1,6 @@
+pywin32
+pyscreeze
+pynput
+WMI
+cryptography
+pillow
